@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TurboTurtle Coin — The slowest coin to the moon</title>
+<meta name="description" content="TurboTurtle Coin (TURBO) — The slowest coin... to the moon. A playful demo site where a turtle inches toward a rocket whenever the price rises." />
+<style>
+:root{
+  --bg:#071126; --card:#0b1a2b; --muted:#9fb9db; --accent:#7fe6a8;
+  --track-height:140px; --turtle-size:110px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#eaf3ff;background:linear-gradient(180deg,#031025 0%, #071126 100%);padding:20px;display:flex;flex-direction:column;gap:18px;align-items:center}
+.container{width:100%;max-width:1100px}
+.header{display:flex;align-items:center;gap:14px}
+.logo{width:72px;height:72px;background:linear-gradient(135deg,#6dec9d,#2bb3ff);border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(11,26,43,0.6)}
+.logo svg{width:52px;height:52px}
+h1{margin:0;font-size:1.5rem}
+.lead{color:var(--muted);margin:4px 0 0 0}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.controls label{color:var(--muted);min-width:110px}
+.controls input, .controls select, .controls button{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+.small{font-size:0.9rem;color:var(--muted)}
+
+/* Track */
+.track-wrap{margin-top:10px}
+.track{position:relative;height:var(--track-height);background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:18px;overflow:hidden;display:flex;align-items:center}
+.goal{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:40px;z-index:2}
+.turtle{position:absolute;left:18px;bottom:8px;width:var(--turtle-size);height:auto;transition:transform 1.2s cubic-bezier(.22,.9,.22,1);z-index:3;user-select:none;pointer-events:none}
+
+/* Sections */
+.grid{display:grid;grid-template-columns:1fr 360px;gap:12px}
+@media (max-width:900px){.grid{grid-template-columns:1fr} .header{flex-direction:row}}
+
+/* Tokenomics & socials */
+.tokenomics li{margin:6px 0}
+.socials{display:flex;gap:8px;margin-top:8px}
+.socials a{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);text-decoration:none;color:var(--muted);font-weight:600}
+
+/* Footer */
+footer{color:var(--muted);font-size:0.9rem;padding:10px;text-align:center}
+
+/* fun badge */
+.badge{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(127,230,168,0.12);color:var(--accent);font-weight:700;margin-left:6px}
+
+/* subtle responsive */
+@media (max-width:420px){:root{--turtle-size:84px;--track-height:110px} .controls label{min-width:unset}}
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo card" aria-hidden="true">
+        <!-- simple turtle logo (SVG) -->
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <g transform="translate(2 4)">
+            <ellipse cx="28" cy="36" rx="22" ry="12" fill="#2b8a3e"/>
+            <ellipse cx="28" cy="26" rx="16" ry="9" fill="#71d28f"/>
+            <circle cx="8" cy="24" r="4" fill="#2b8a3e"/>
+            <circle cx="48" cy="24" r="3.5" fill="#2b8a3e"/>
+            <circle cx="20" cy="18" r="3.5" fill="#11471f"/>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <h1>TurboTurtle Coin <span class="badge">TURBO</span></h1>
+        <p class="lead">The slowest coin... to the moon. Every time the price rises, Turbo Turtle takes a tiny step forward.</p>
+      </div>
+    </header>
+
+    <main class="grid" role="main">
+      <section class="card">
+        <h2 style="margin-top:0">Live Demo Track</h2>
+        <p class="small">Set a tracked price source below. When the tracked price increases compared to the last value, our turtle will inch closer to the rocket.</p>
+
+        <div class="card controls" style="margin-top:10px">
+          <label>Source:</label>
+          <select id="priceSource">
+            <option value="manual" selected>Manual input</option>
+            <option value="coingecko">CoinGecko (crypto)</option>
+          </select>
+
+          <div id="manualRow" style="display:flex;gap:8px;align-items:center;">
+            <label>New price:</label>
+            <input id="manualPrice" type="number" step="0.0001" placeholder="e.g. 420.50" />
+            <button id="applyManual">Apply</button>
+          </div>
+
+          <div id="cgRow" style="display:none;gap:8px;align-items:center;">
+            <label>CoinGecko id:</label>
+            <input id="cgId" type="text" value="bitcoin" />
+            <label>Currency:</label>
+            <input id="cgVs" type="text" value="usd" />
+            <button id="fetchCg">Fetch</button>
+            <button id="startPoll">Start Auto</button>
+            <button id="stopPoll" disabled>Stop Auto</button>
+          </div>
+
+          <div style="width:100%;margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div><strong>Current</strong><div id="currentPrice" class="small">—</div></div>
+            <div><strong>Last</strong><div id="lastPrice" class="small">—</div></div>
+            <div style="margin-left:auto"><button id="resetBtn">Reset Turtle</button></div>
+          </div>
+        </div>
+
+        <div class="track-wrap" style="margin-top:12px">
+          <div class="track" id="track">
+            <div class="goal" title="The moon!">🚀</div>
+            <!-- Inline SVG turtle (larger) -->
+            <svg class="turtle" id="turtle" viewBox="0 0 120 78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <g transform="translate(0,0)">
+                <ellipse cx="52" cy="50" rx="40" ry="18" fill="#2b8a3e" />
+                <ellipse cx="52" cy="34" rx="28" ry="14" fill="#71d28f" />
+                <circle cx="12" cy="36" r="6" fill="#2b8a3e" />
+                <circle cx="100" cy="32" r="5" fill="#2b8a3e" />
+                <circle cx="38" cy="24" r="4" fill="#11471f" />
+                <rect x="18" y="12" rx="8" ry="8" width="28" height="18" fill="#7fe6a8" opacity="0.12"/>
+                <!-- smile -->
+                <path d="M40 40 q8 6 20 0" stroke="#0b3f1d" stroke-width="2" fill="none" stroke-linecap="round"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <p class="small" style="margin-top:8px">Tip: first price sets baseline. Only increases move the turtle. Movement is proportional to percent increase and clamped for smooth animation.</p>
+      </section>
+
+      <aside class="card">
+        <h3 style="margin-top:0">About TurboTurtle</h3>
+        <p class="small">TurboTurtle Coin is a playful meme token concept built around one joke: we move slowly — but we'll get there. Great for community memes, merch, and tongue-in-cheek tweets.</p>
+
+        <h4 style="margin-bottom:6px">Tokenomics (jokey)</h4>
+        <ul class="tokenomics small">
+          <li><strong>Supply:</strong> 1,000,000,000 TURBO</li>
+          <li><strong>Team:</strong> 0% (we're turtles, not devs)</li>
+          <li><strong>Liquidity:</strong> Locked... eventually</li>
+          <li><strong>Use:</strong> Memes, stickers, turtle gifs</li>
+        </ul>
+
+        <h4 style="margin-top:12px;margin-bottom:6px">Join the Pack</h4>
+        <div class="socials">
+          <a href="#" onclick="alert('Placeholder — set your Discord link')">Discord</a>
+          <a href="#" onclick="alert('Placeholder — set your Twitter/X link')">Twitter/X</a>
+          <a href="#" onclick="alert('Placeholder — set your Telegram link')">Telegram</a>
+        </div>
+
+        <h4 style="margin-top:12px">Want this live?</h4>
+        <p class="small">Download the single-file HTML and upload it to Netlify Drop, GitHub Pages, or Vercel. It's fully static and easy to share.</p>
+      </aside>
+    </main>
+
+    <footer class="card" style="margin-top:10px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="small">This is a demo / meme. Not financial advice.</div>
+        <div style="margin-left:auto" class="small">Made with 🐢 by you</div>
+      </div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  const turtle = document.getElementById('turtle');
+  const track = document.getElementById('track');
+  const currentPriceOut = document.getElementById('currentPrice');
+  const lastPriceOut = document.getElementById('lastPrice');
+  const priceSource = document.getElementById('priceSource');
+  const manualRow = document.getElementById('manualRow');
+  const cgRow = document.getElementById('cgRow');
+  const manualPrice = document.getElementById('manualPrice');
+  const applyManual = document.getElementById('applyManual');
+  const fetchCg = document.getElementById('fetchCg');
+  const startPoll = document.getElementById('startPoll');
+  const stopPoll = document.getElementById('stopPoll');
+  const cgId = document.getElementById('cgId');
+  const cgVs = document.getElementById('cgVs');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let lastPrice = null;
+  let currentPrice = null;
+  let positionPercent = 0; // 0% left, up to maxPercent
+  const maxPercent = 86;
+  const minPercent = 0;
+  const maxMovePercentPerEvent = 20;
+  let pollId = null;
+
+  function updateDisplays(){
+    currentPriceOut.textContent = currentPrice===null ? '—' : Number(currentPrice).toLocaleString();
+    lastPriceOut.textContent = lastPrice===null ? '—' : Number(lastPrice).toLocaleString();
+  }
+
+  function moveByPercent(deltaPct){
+    positionPercent = Math.min(maxPercent, Math.max(minPercent, positionPercent + deltaPct));
+    const rect = track.getBoundingClientRect();
+    const leftPad = 18;
+    const rightPad = 18;
+    const available = rect.width - leftPad - rightPad - turtle.clientWidth - 24;
+    const px = (positionPercent/100) * Math.max(0, available);
+    turtle.style.transform = `translateX(${px}px)`;
+  }
+
+  function handleNewPrice(newP){
+    const newPrice = Number(newP);
+    if (!isFinite(newPrice) || newPrice <= 0) return;
+    if (currentPrice === null){
+      lastPrice = newPrice;
+      currentPrice = newPrice;
+      updateDisplays();
+      return;
+    }
+    lastPrice = currentPrice;
+    currentPrice = newPrice;
+    updateDisplays();
+    if (currentPrice > lastPrice){
+      const pct = (currentPrice - lastPrice) / lastPrice; // e.g., 0.02 for 2%
+      let movePct = Math.sqrt(pct*100) * 3.5; // scaling so small changes visible
+      movePct = Math.min(movePct, maxMovePercentPerEvent);
+      moveByPercent(movePct);
+    }
+  }
+
+  priceSource.addEventListener('change', (e)=>{
+    if (e.target.value === 'manual'){
+      manualRow.style.display = 'flex';
+      cgRow.style.display = 'none';
+    } else {
+      manualRow.style.display = 'none';
+      cgRow.style.display = 'flex';
+    }
+  });
+
+  applyManual.addEventListener('click', ()=>{
+    const v = manualPrice.value;
+    if (!v) return;
+    handleNewPrice(Number(v));
+    manualPrice.value='';
+  });
+
+  async function fetchCoinGecko(id, vs='usd'){
+    try{
+      const resp = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(id)}&vs_currencies=${encodeURIComponent(vs)}`);
+      if (!resp.ok) throw new Error('network');
+      const data = await resp.json();
+      if (!data[id] || data[id][vs] === undefined) throw new Error('bad resp');
+      return data[id][vs];
+    } catch (err){
+      console.error('cg err', err);
+      alert('CoinGecko fetch failed: ' + err.message);
+      return null;
+    }
+  }
+
+  fetchCg.addEventListener('click', async ()=>{
+    const id = cgId.value.trim();
+    const vs = cgVs.value.trim() || 'usd';
+    if (!id) return alert('Enter CoinGecko id (e.g., bitcoin)');
+    const p = await fetchCoinGecko(id, vs);
+    if (p !== null) handleNewPrice(p);
+  });
+
+  startPoll.addEventListener('click', ()=>{
+    if (pollId) return;
+    pollId = setInterval(async ()=>{
+      const id = cgId.value.trim();
+      const vs = cgVs.value.trim() || 'usd';
+      if (!id) return;
+      const p = await fetchCoinGecko(id, vs);
+      if (p !== null) handleNewPrice(p);
+    }, 10000);
+    startPoll.disabled = true;
+    stopPoll.disabled = false;
+  });
+
+  stopPoll.addEventListener('click', ()=>{
+    if (!pollId) return;
+    clearInterval(pollId);
+    pollId = null;
+    startPoll.disabled = false;
+    stopPoll.disabled = true;
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    positionPercent = 0;
+    turtle.style.transform = 'translateX(0px)';
+    lastPrice = null; currentPrice = null; updateDisplays();
+  });
+
+  // small helper to expose for debugging
+  window.turboTurtle = {handleNewPrice, moveByPercent: moveByPercent, state: ()=>({lastPrice,currentPrice,positionPercent})};
+
+  updateDisplays();
+
+})();
+</script>
+</body>
+</html>
